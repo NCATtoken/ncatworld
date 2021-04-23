@@ -1,7 +1,3 @@
-<div *ngIf="!showmenu" class="text-light">
-    Press /
-</div>
-
 <div id="menu" *ngIf="showmenu">
     <div class="d-flex align-items-end">
         <div class="nes-container is-dark is-rounded with-title" (click)="action=''">
@@ -24,10 +20,16 @@
                     <span>Buy</span>
                 </label>
             </div>
+            <div>
+                <label>
+                    <input type="radio" class="nes-radio" name="action" value="Info" [(ngModel)]="action" />
+                    <span>Info</span>
+                </label>
+            </div>
         </div>
 
         <!-- submenu -->
-        <div class="nes-container is-dark is-rounded with-title" *ngIf="action">
+        <div class="nes-container is-dark is-rounded with-title" *ngIf="action"  style="max-width:300px">
             <div class="title">{{action}}</div>
             <ng-container *ngIf="action=='Ground'">
                 <div class="nes-btn is-error d-block" (click)="buildItem(undefined)">Dirt</div>
@@ -46,7 +48,21 @@
                 <div class="nes-btn is-success d-block" (click)="dropItem(undefined)">Clear</div>
                 <div class="nes-btn is-error d-block" (click)="dropItem('tree')">Tree</div>
             </ng-container>
+
+            <ng-container *ngIf="action=='Info'">
+                This is just a PoC (Proof of Concept).
+                <div class="text-light" style="font-family: monospace">
+                    TODO:<br>
+                    - scroll map<br>
+                    - pop message<br>
+                    - burn token<br>
+                    - firebase persistent map<br>
+                    - synchronized multiplayer<br>
+                    - chat
+                </div>
+            </ng-container>
         </div>
 
     </div>
 </div>
+<button class="nes-btn" (click)="showmenu=!showmenu">/</button>
