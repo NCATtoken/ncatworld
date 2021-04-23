@@ -1,1 +1,10 @@
-/* You can add global styles to this file, and also import other style files */
+@charset "utf-8";
+@import url("https://fonts.googleapis.com/css?family=Press+Start+2P");
+@import "~nes.css/css/nes.css";
+
+$primary: #e07891;
+$font-family-base: "Press Start 2P";
+$font-size-base: 0.75rem;
+$secondary: #e7e7e7;
+
+@import "~bootstrap/scss/bootstrap.scss";

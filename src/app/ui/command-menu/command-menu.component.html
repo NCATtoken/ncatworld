@@ -1,0 +1,52 @@
+<div *ngIf="!showmenu" class="text-light">
+    Press /
+</div>
+
+<div id="menu" *ngIf="showmenu">
+    <div class="d-flex align-items-end">
+        <div class="nes-container is-dark is-rounded with-title" (click)="action=''">
+            <div class="title">Player #1</div>
+            <div>
+                <label>
+                    <input type="radio" class="nes-radio" name="action" value="Ground" [(ngModel)]="action" />
+                    <span>Ground</span>
+                </label>
+            </div>
+            <div>
+                <label>
+                    <input type="radio" class="nes-radio" name="action" value="Build" [(ngModel)]="action" />
+                    <span>Build</span>
+                </label>
+            </div>
+            <div>
+                <label>
+                    <input type="radio" class="nes-radio" name="action" value="Buy" [(ngModel)]="action" />
+                    <span>Buy</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- submenu -->
+        <div class="nes-container is-dark is-rounded with-title" *ngIf="action">
+            <div class="title">{{action}}</div>
+            <ng-container *ngIf="action=='Ground'">
+                <div class="nes-btn is-error d-block" (click)="buildItem(undefined)">Dirt</div>
+                <div class="nes-btn is-success d-block" (click)="buildItem('water')">Water</div>
+                <div class="nes-btn is-success d-block" (click)="buildItem('grass')">Grass</div>
+
+            </ng-container>
+            <ng-container *ngIf="action=='Buy'">
+                <div class="nes-btn is-warning d-block" (click)="purchaseItem(50)">50 NCAT</div>
+                <div class="nes-btn is-warning d-block" (click)="purchaseItem(100)">100 NCAT</div>
+                <div class="nes-btn is-warning d-block" (click)="purchaseItem(500)">500 NCAT</div>
+                <div class="nes-btn is-warning d-block" (click)="purchaseItem(1000)">1000 NCAT</div>
+
+            </ng-container>
+            <ng-container *ngIf="action=='Build'">
+                <div class="nes-btn is-success d-block" (click)="dropItem(undefined)">Clear</div>
+                <div class="nes-btn is-error d-block" (click)="dropItem('tree')">Tree</div>
+            </ng-container>
+        </div>
+
+    </div>
+</div>
