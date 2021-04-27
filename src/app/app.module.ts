@@ -4,6 +4,8 @@ import { BrowserModule } from '@angular/platform-browser';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
+import { PlayerRenderer } from './renderer/Player';
+import { TileRenderer } from './renderer/Tile';
 import { MapService } from './services/map.service';
 import { CommandMenuComponent } from './ui/command-menu/command-menu.component';
 import { HUDComponent } from './ui/hud/hud.component';
@@ -19,7 +21,11 @@ import { HUDComponent } from './ui/hud/hud.component';
     AppRoutingModule,
     FormsModule,
   ],
-  providers: [MapService],
+  providers: [
+    MapService,
+    PlayerRenderer,
+    TileRenderer,
+  ],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

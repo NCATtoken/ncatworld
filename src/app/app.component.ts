@@ -1,7 +1,8 @@
 import { Component, ElementRef, OnInit, ViewChild, HostListener } from '@angular/core';
-import { Player } from './services/Player';
 import { TARGETFPS, TILESIZE } from "./config";
-import { Coordinate, MapService } from './services/map.service';
+import { MapService } from './services/map.service';
+import { BuilderInfo, Coordinate } from './services/models';
+import { PlayerService } from './services/player.service';
 
 @Component({
   selector: 'app-root',
@@ -15,14 +16,13 @@ export class AppComponent implements OnInit {
   canvas!: ElementRef<HTMLCanvasElement>;
   ctx!: CanvasRenderingContext2D;
   showmenu = false;
+  cursorAt = new Coordinate;
   mode?: string;
-  type?: string;
+  builderInfo?: BuilderInfo;
+  pixelscale = 1;
 
-  w = 0; h = 0;
-  bg!: HTMLImageElement;
-  cursorAt: Coordinate = { x: 0, y: 0 };
 
-  constructor(private player: Player, private map: MapService) {
+  constructor(private player: PlayerService, private map: MapService) {
     //
   }
 
@@ -37,11 +37,17 @@ export class AppComponent implements OnInit {
     switch (event.key) {
       case '/':
         this.showmenu = !this.showmenu;
+        if (!this.showmenu) {
+          // mobile friendly, hide menu = end editor
+          delete this.mode;
+          delete this.builderInfo;
+        }
         break;
       case 'Escape':
         this.showmenu = false;
+        // this.showhighlight = false;
         delete this.mode;
-        delete this.type;
+        delete this.builderInfo;
         break;
     }
 
@@ -54,29 +60,28 @@ export class AppComponent implements OnInit {
 
     this.resizeCanvas();
 
-    setInterval(() => this.draw(), 1000 / TARGETFPS); // 30fps
+    setInterval(() => this.renderframe(), 1000 / TARGETFPS);
   }
 
-  draw() {
-    for (let r = 0; r < this.w / TILESIZE; r++) {
-      for (let c = 0; c < this.h / TILESIZE; c++) {
-        this.ctx.drawImage(this.map.getBg(r, c), r * TILESIZE, c * TILESIZE, TILESIZE, TILESIZE)
-        let o = this.map.getOverlay(r, c);
-        if (o) {
-          this.ctx.drawImage(o, r * TILESIZE, c * TILESIZE, TILESIZE, TILESIZE);
-        }
-      }
-    }
-    this.drawHighlighted();
-    this.player.draw(this.ctx);
+  renderframe() {
+    this.map.render(this.ctx, this.player, this.mode ? this.cursorAt : null);
   }
 
   resizeCanvas() {
-    this.w = window.innerWidth;
-    this.h = window.innerHeight;
-    this.canvas.nativeElement.width = this.w;
-    this.canvas.nativeElement.height = this.h;
-    this.draw();
+    this.pixelscale = (window.innerWidth < 640) ? 1 : 2;
+    this.map.setViewportSize(window.innerWidth / this.pixelscale, window.innerHeight / this.pixelscale);
+    this.canvas.nativeElement.width = window.innerWidth / this.pixelscale;
+    this.canvas.nativeElement.height = window.innerHeight / this.pixelscale;
+    this.renderframe();
+  }
+
+  _getCoordinate(event: MouseEvent): Coordinate {
+    const rect = this.canvas.nativeElement.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    var c = new Coordinate;
+    c.set(Math.floor(y / TILESIZE / this.pixelscale), Math.floor(x / TILESIZE / this.pixelscale));
+    return c;
   }
 
   clickCanvas(event: MouseEvent) {
@@ -84,56 +89,53 @@ export class AppComponent implements OnInit {
     if (this.showmenu) {
       this.showmenu = false;
       delete this.mode;
+      delete this.builderInfo;
       return;
     }
 
     switch (this.mode) {
       case 'build':
-        this.map.setBg(this.cursorAt, this.type);
-        this.player.deductTokens(5);
+        try {
+          this.player.deductTokens(this.builderInfo!.cost);
+          this.map.build(this.cursorAt, this.builderInfo!);
+        } catch (e) {
+          alert(e);
+        }
         return;
 
       case 'drop':
-        this.map.setOverlay(this.cursorAt, this.type);
-        this.player.deductTokens(20);
+        try {
+          this.player.deductTokens(this.builderInfo!.cost);
+          this.map.drop(this.cursorAt, this.builderInfo!);
+        } catch (e) {
+          alert(e);
+        }
         return;
     }
 
-    const rect = this.canvas.nativeElement.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
-    this.player.move(Math.floor(x / TILESIZE), Math.floor(y / TILESIZE));
-  }
-
-  drawHighlighted() {
-    if (!this.mode) return;
-    this.ctx.beginPath();
-    this.ctx.strokeStyle = "white";
-    this.ctx.rect(this.cursorAt.x * TILESIZE, this.cursorAt.y * TILESIZE, TILESIZE, TILESIZE);
-    this.ctx.stroke();
+    const c = this._getCoordinate(event);
+    this.player.moveTo(c);
   }
 
   pointCanvas(event: MouseEvent) {
-    const rect = this.canvas.nativeElement.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
-    this.cursorAt = { x: Math.floor(x / TILESIZE), y: Math.floor(y / TILESIZE) };
+    const c = this._getCoordinate(event);
+    this.cursorAt = c;
   }
 
-  drop(e: string) {
+  drop(e: BuilderInfo) {
     this.mode = 'drop';
-    this.type = e;
+    this.builderInfo = e;
     this.showmenu = false;
   }
 
-  buy(e: number) {
-    this.player.addTokens(e);
+  burn(e: { tokens: number }) {
+    this.player.burnTokens(e.tokens);
     this.showmenu = false;
   }
 
-  build(e: string) {
+  build(e: BuilderInfo) {
     this.mode = 'build';
-    this.type = e;
+    this.builderInfo = e;
     this.showmenu = false;
   }
 }

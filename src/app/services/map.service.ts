@@ -1,13 +1,9 @@
 import { Injectable } from '@angular/core';
-
-export class MapTile {
-  type!: number;
-  imageUrl!: string;
-}
-
-export interface Coordinate {
-  x: number; y: number;
-}
+import { TILESIZE, WORLDSIZE } from '../config';
+import { PlayerRenderer } from '../renderer/Player';
+import { TileRenderer } from '../renderer/Tile';
+import { BuilderInfo, Coordinate } from './models';
+import { PlayerService } from './player.service';
 
 @Injectable({
   providedIn: 'root'
@@ -15,82 +11,103 @@ export interface Coordinate {
 
 
 export class MapService {
+  private viewportWidth = 1000;
+  private viewportHeight = 1000;
+  private map: number[][] = [];
 
-  dirt!: HTMLImageElement;
-  water!: HTMLImageElement;
-  grass!: HTMLImageElement;
-  tree!: HTMLImageElement;
-  w = 1000; h = 1000;
-  map: (string | undefined)[][] = [];
-  overlay: (string | undefined)[][] = [];
-
-
-  constructor() {
-
-    this.dirt = new Image();
-    this.dirt.src = 'assets/dirt.png';
-    this.grass = new Image();
-    this.grass.src = 'assets/grass.png';
-    this.water = new Image();
-    this.water.src = 'assets/water.png';
-    this.tree = new Image();
-    this.tree.src = 'assets/tree.png';
+  constructor(private tileRenderer: TileRenderer) {
 
     try {
-      this.map = JSON.parse(sessionStorage.getItem('map') || '[]');
-      this.overlay = JSON.parse(sessionStorage.getItem('overlay') || '[]');
+      this.map = JSON.parse(sessionStorage.getItem('map') || '[][]');
     } catch (e) {
       console.log(e);
     }
 
-    if (!this.map || !this.map.length || !this.overlay || !this.overlay.length)
+    if (!this.map || !this.map.length)
       // init blank map
-      for (let r = 0; r < 100; r++) {
-        var a: (string | undefined)[] = [];
-        for (let c = 0; c < 100; c++) {
-          a.push(undefined);
+      for (let r = 0; r < WORLDSIZE; r++) {
+        var a: number[] = [];
+        for (let c = 0; c < WORLDSIZE; c++) {
+          a.push(0);
         }
         this.map.push(a);
-        var b = [];
-        for (let c = 0; c < 100; c++) {
-          b.push(undefined);
-        }
-        this.overlay.push(b);
       }
   }
 
-  getBg(x: number, y: number): HTMLImageElement {
-    switch (this.map[x][y]) {
-      case 'water': return this.water;
-      case 'grass': return this.grass;
-    }
-    return this.dirt;
+
+  setViewportSize(width: number, height: number) {
+    this.viewportWidth = width;
+    this.viewportHeight = height;
   }
 
-  getOverlay(x: number, y: number): HTMLImageElement | undefined {
-    switch (this.overlay[x][y]) {
-      case 'tree': return this.tree;
-    }
-    return undefined;
+  build(at: Coordinate, info: BuilderInfo) {
+    this._setmap(at, info.id!, 8 * info.layer);
   }
 
-  isBlocking(x: number, y: number): boolean {
-    switch (this.map[x][y]) {
-      case 'water': return true;
-    }
-    if (this.overlay[x][y]) {
-      return true;
-    }
-    return false;
-  }
-
-  setBg(c: Coordinate, type?: string) {
-    this.map[c.x][c.y] = type;
+  drop(at: Coordinate, info: BuilderInfo) {
+    console.log(at, info);
+    this.map[at.r][at.c] = 0;
     sessionStorage.setItem('map', JSON.stringify(this.map));
   }
 
-  setOverlay(c: Coordinate, type?: string) {
-    this.overlay[c.x][c.y] = type;
-    sessionStorage.setItem('overlay', JSON.stringify(this.overlay));
+  private _setmap(c: Coordinate, id: number, shift: number) {
+    this.map[c.r][c.c] = this.map[c.r][c.c] & ~(0xff << shift) | ((id & 0xff) << shift);
+    console.log(this.map);
+    sessionStorage.setItem('map', JSON.stringify(this.map));
   }
+
+  private isBlocked(c: Coordinate): boolean {
+    return (this.map[c.r][c.c] & 0x808080) !== 0;
+  }
+
+  // update next move
+  private nextframe(player: PlayerService) {
+    player.nextframe((c) => this.isBlocked(c));
+  }
+
+  render(context: CanvasRenderingContext2D, player: PlayerService, highlight: Coordinate | null,) {
+    this.nextframe(player);
+    let sw = Math.ceil(this.viewportWidth / TILESIZE);
+    let sh = Math.ceil(this.viewportHeight / TILESIZE);
+    for (let r = 0; r < sw; r++) {
+      for (let c = 0; c < sh; c++) {
+        this.tileRenderer.renderGround(this.map[r][c] & 0xff, context, r, c);
+
+        // ground
+        if (this.map[r][c] & 0xff) {
+          this.tileRenderer.renderTerrain(this.map[r][c] & 0xff, context, r, c);
+        }
+        // terrain
+        if (this.map[r][c] >> 8 & 0xff) {
+          this.tileRenderer.renderTerrain(this.map[r][c] >> 8 & 0xff, context, r, c);
+        }
+        // builds
+        if (this.map[r][c] >> 16 & 0xff) {
+          this.tileRenderer.renderObject(this.map[r][c] >> 16 & 0xff, context, r, c);
+        }
+        // context.drawImage(this.map.getBg(r, c), r * TILESIZE, c * TILESIZE, TILESIZE, TILESIZE)
+        // let o = this.map.getOverlay(r, c);
+        // if (o) {
+        //   context.drawImage(o, r * TILESIZE, c * TILESIZE, TILESIZE, TILESIZE);
+        // }
+      }
+    }
+
+    player.render(context);
+    if (highlight !== null) {
+      this._drawHighlighted(context, highlight);
+    }
+
+
+  }
+
+  private _drawHighlighted(context: CanvasRenderingContext2D, coordinate: Coordinate) {
+    context.save();
+    context.beginPath();
+    context.strokeStyle = "white";
+    context.rect(coordinate.x, coordinate.y, TILESIZE, TILESIZE);
+    context.stroke();
+    context.restore();
+  }
+
 }

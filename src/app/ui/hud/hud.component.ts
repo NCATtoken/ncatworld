@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { Player } from 'src/app/services/Player';
+import { PlayerService } from 'src/app/services/player.service';
 
 @Component({
   selector: 'app-hud',
@@ -8,7 +8,7 @@ import { Player } from 'src/app/services/Player';
 })
 export class HUDComponent implements OnInit {
 
-  constructor(public player: Player) { }
+  constructor(public player: PlayerService) { }
 
   ngOnInit(): void {
   }

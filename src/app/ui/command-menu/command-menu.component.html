@@ -10,14 +10,20 @@
             </div>
             <div>
                 <label>
+                    <input type="radio" class="nes-radio" name="action" value="Terrain" [(ngModel)]="action" />
+                    <span>Terrain</span>
+                </label>
+            </div>
+            <div>
+                <label>
                     <input type="radio" class="nes-radio" name="action" value="Build" [(ngModel)]="action" />
                     <span>Build</span>
                 </label>
             </div>
             <div>
                 <label>
-                    <input type="radio" class="nes-radio" name="action" value="Buy" [(ngModel)]="action" />
-                    <span>Buy</span>
+                    <input type="radio" class="nes-radio" name="action" value="Burn" [(ngModel)]="action" />
+                    <span>Burn</span>
                 </label>
             </div>
             <div>
@@ -32,21 +38,25 @@
         <div class="nes-container is-dark is-rounded with-title" *ngIf="action"  style="max-width:300px">
             <div class="title">{{action}}</div>
             <ng-container *ngIf="action=='Ground'">
-                <div class="nes-btn is-error d-block" (click)="buildItem(undefined)">Dirt</div>
-                <div class="nes-btn is-success d-block" (click)="buildItem('water')">Water</div>
-                <div class="nes-btn is-success d-block" (click)="buildItem('grass')">Grass</div>
-
+                <div class="nes-btn is-error d-block" (click)="sendDrop(0,1)">Clear</div>
+                <div class="nes-btn is-success d-block" *ngFor="let item of buildables[0]" (click)="sendBuild(item[1],item[2],item[3])">{{item[0]}}</div>
             </ng-container>
-            <ng-container *ngIf="action=='Buy'">
-                <div class="nes-btn is-warning d-block" (click)="purchaseItem(50)">50 NCAT</div>
-                <div class="nes-btn is-warning d-block" (click)="purchaseItem(100)">100 NCAT</div>
-                <div class="nes-btn is-warning d-block" (click)="purchaseItem(500)">500 NCAT</div>
-                <div class="nes-btn is-warning d-block" (click)="purchaseItem(1000)">1000 NCAT</div>
 
+            <ng-container *ngIf="action=='Terrain'">
+                <div class="nes-btn is-error d-block" (click)="sendDrop(1,1)">Clear</div>
+                <div class="nes-btn is-success d-block" *ngFor="let item of buildables[1]" (click)="sendBuild(item[1],item[2],item[3])">{{item[0]}}</div>
             </ng-container>
+
             <ng-container *ngIf="action=='Build'">
-                <div class="nes-btn is-success d-block" (click)="dropItem(undefined)">Clear</div>
-                <div class="nes-btn is-error d-block" (click)="dropItem('tree')">Tree</div>
+                <div class="nes-btn is-error d-block" (click)="sendDrop(2,1)">Clear</div>
+                <div class="nes-btn is-success d-block" *ngFor="let item of buildables[2]" (click)="sendBuild(item[1],item[2],item[3])">{{item[0]}}</div>
+            </ng-container>
+
+            <ng-container *ngIf="action=='Burn'">
+                <div class="nes-btn is-warning d-block" (click)="sendBurn(50)">50 NCAT</div>
+                <div class="nes-btn is-warning d-block" (click)="sendBurn(100)">100 NCAT</div>
+                <div class="nes-btn is-warning d-block" (click)="sendBurn(500)">500 NCAT</div>
+                <div class="nes-btn is-warning d-block" (click)="sendBurn(1000)">1000 NCAT</div>
             </ng-container>
 
             <ng-container *ngIf="action=='Info'">
@@ -58,7 +68,8 @@
                     - burn token<br>
                     - firebase persistent map<br>
                     - synchronized multiplayer<br>
-                    - chat
+                    - chat<br>
+                    - customize your cat (avatar)
                 </div>
             </ng-container>
         </div>
