@@ -1,6 +1,5 @@
 import { Injectable } from '@angular/core';
 import { TILESIZE, WORLDSIZE } from '../config';
-import { PlayerRenderer } from '../renderer/Player';
 import { TileRenderer } from '../renderer/Tile';
 import { BuilderInfo, Coordinate } from './models';
 import { PlayerService } from './player.service';
