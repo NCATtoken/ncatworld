@@ -11,12 +11,18 @@ import { Coordinate } from './models';
 
 export class PlayerService {
   deductTokens(cost: number) {
-    console.log('deductTokens', cost);
-    if (this.balance < cost) throw 'You are poor';
+    if (this.balance < cost) throw 'Burn NCAT to fill your energy meter';
     this.balance -= cost;
+    this.save();
   }
+
   burnTokens(e: number) {
     this.balance += e;
+    this.save();
+  }
+
+  save() {
+    sessionStorage.setItem('player', JSON.stringify({ balance: this.balance, r: this.coordinate.r, c: this.coordinate.c }))
   }
 
 
@@ -29,9 +35,18 @@ export class PlayerService {
   balance = 0;
 
   constructor(private playerRenderer: PlayerRenderer) {
+    try {
+      let p = JSON.parse(sessionStorage.getItem('player') || '');
+      if (p) {
+        this.balance = p.balance || 0;
+        this.coordinate.set(p.r, p.c);
+      }
+    } catch (e) {
+      //
+    }
   }
 
-  nextframe(isBlocking: (c: Coordinate) => boolean) {
+  nextframe(isBlocking: (pos: Coordinate) => boolean) {
 
     if (this.destination == null) return;
 
@@ -59,6 +74,7 @@ export class PlayerService {
     }
 
     this.coordinate.updateRC();
+    this.save();
 
     if (isBlocking(this.coordinate)) {
       // if cannot move, restore and stop moving
@@ -81,38 +97,9 @@ export class PlayerService {
     this.playerRenderer.render(context, this.coordinate.x, this.coordinate.y, this.frame, this.moving, this.direction);
   }
 
-  moveTo(coordinate: Coordinate) {
-    this.destination = coordinate;
+  moveTo(pos: Coordinate) {
+    this.destination = pos;
   }
 
-
-  // draw(ctx: CanvasRenderingContext2D) {
-  //     // calculate movement
-  //     let old = this.coordinate.copy();
-
-  //     if (this.moveTo != null) {
-  //         if (this.x > this.moveTo.x * TILESIZE) {
-  //             this.x -= MOVESPEED;
-  //             this.direction = 1;
-  //         }
-  //         else if (this.x < this.moveTo.x * TILESIZE) {
-  //             this.x += MOVESPEED;
-  //             this.direction = -1;
-  //         }
-  //         if (this.y > this.moveTo.y * TILESIZE) { this.y -= MOVESPEED; }
-  //         else if (this.y < this.moveTo.y * TILESIZE) { this.y += MOVESPEED; }
-  //     }
-
-  //     this.checkValidMove(oldx, oldy);
-
-
-  //     ctx.save();
-  //     if (this.direction == -1) {
-  //         ctx.translate(TILESIZE, 0);
-  //         ctx.scale(-1, 1);
-  //     }
-  //     ctx.drawImage(this.img, this.direction * this.x, this.y, TILESIZE, TILESIZE);
-  //     ctx.restore();
-  // }
 
 }
